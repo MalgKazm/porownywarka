@@ -6,7 +6,8 @@ def compare_headers(txt_file, excel_file):
     txt_headers = set()
     
     # Wczytaj plik tekstowy i znajdź 9-cyfrowe liczby
-    for line in txt_file.getvalue().decode("utf-8").splitlines():
+    txt_content = txt_file.read().decode("utf-8")
+    for line in txt_content.splitlines():
         matches = re.findall(r"\b\d{9}\b", line)
         txt_headers.update(matches)
 
@@ -24,8 +25,8 @@ def compare_headers(txt_file, excel_file):
     missing_in_txt = sorted(excel_headers - txt_headers)
 
     diff_df = pd.DataFrame({
-        "Missing in Excel": missing_in_excel + [""] * (max(len(missing_in_txt), len(missing_in_excel)) - len(missing_in_excel)),
-        "Missing in Text File": missing_in_txt + [""] * (max(len(missing_in_txt), len(missing_in_excel)) - len(missing_in_txt))
+        "Missing in Excel": missing_in_excel + ["" for _ in range(len(missing_in_txt) - len(missing_in_excel))],
+        "Missing in Text File": missing_in_txt + ["" for _ in range(len(missing_in_excel) - len(missing_in_txt))]
     })
 
     return diff_df
