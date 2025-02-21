@@ -5,15 +5,14 @@ import re
 def compare_headers(txt_file, excel_file):
     txt_headers = set()
     
-    # Wczytaj plik tekstowy i znajdź 9-cyfrowe liczby
-    txt_content = txt_file.read().decode("utf-8")
+    # Odczytaj plik tekstowy bezpośrednio z bufora
+    txt_content = txt_file.getvalue().decode("utf-8")
     for line in txt_content.splitlines():
         matches = re.findall(r"\b\d{9}\b", line)
         txt_headers.update(matches)
 
-    # Wczytaj plik Excel
-    xls = pd.ExcelFile(excel_file)
-    df_excel = pd.read_excel(xls, sheet_name=xls.sheet_names[1])
+    # Odczytaj plik Excel bezpośrednio jako obiekt Pandas
+    df_excel = pd.read_excel(excel_file, sheet_name=1)  # Zakładamy, że interesuje nas drugi arkusz
 
     if len(df_excel.columns) > 2:
         excel_headers = set(df_excel.iloc[:, 2].dropna().astype(str).str.strip())
@@ -40,12 +39,15 @@ txt_file = st.file_uploader("📂 Wybierz plik TXT", type=["txt"])
 excel_file = st.file_uploader("📂 Wybierz plik Excel", type=["xlsx"])
 
 if txt_file and excel_file:
-    result = compare_headers(txt_file, excel_file)
-    
-    st.write("🔍 **Wynik porównania:**")
-    st.dataframe(result)
+    try:
+        result = compare_headers(txt_file, excel_file)
+        
+        st.write("🔍 **Wynik porównania:**")
+        st.dataframe(result)
 
-    # Pobranie pliku wynikowego
-    result.to_excel("differences_web.xlsx", index=False)
-    with open("differences_web.xlsx", "rb") as file:
-        st.download_button("📥 Pobierz plik wynikowy", file, "differences.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        # Pobranie pliku wynikowego
+        result.to_excel("differences_web.xlsx", index=False)
+        with open("differences_web.xlsx", "rb") as file:
+            st.download_button("📥 Pobierz plik wynikowy", file, "differences.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except Exception as e:
+        st.error(f"❌ Wystąpił błąd: {e}")
