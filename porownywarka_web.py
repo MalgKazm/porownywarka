@@ -2,29 +2,19 @@ import streamlit as st
 import pandas as pd
 import re
 import io
-import tempfile
 
 def compare_headers(txt_file, excel_file):
     try:
         txt_headers = set()
         
-        # Zapisz pliki do katalogu tymczasowego
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as temp_txt:
-            temp_txt.write(txt_file.getvalue())
-            temp_txt_path = temp_txt.name
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_xlsx:
-            temp_xlsx.write(excel_file.getvalue())
-            temp_xlsx_path = temp_xlsx.name
+        # Odczytaj plik tekstowy bezpośrednio z pamięci
+        txt_content = txt_file.getvalue().decode("utf-8")
+        for line in txt_content.splitlines():
+            matches = re.findall(r"\b\d{9}\b", line)
+            txt_headers.update(matches)
 
-        # Odczytaj plik tekstowy
-        with open(temp_txt_path, "r", encoding="utf-8") as file:
-            for line in file:
-                matches = re.findall(r"\b\d{9}\b", line)
-                txt_headers.update(matches)
-
-        # Odczytaj plik Excel
-        df_excel = pd.read_excel(temp_xlsx_path, sheet_name=1)
+        # Odczytaj plik Excel bezpośrednio z pamięci
+        df_excel = pd.read_excel(io.BytesIO(excel_file.getvalue()), sheet_name=1)
 
         if len(df_excel.columns) > 2:
             excel_headers = set(df_excel.iloc[:, 2].dropna().astype(str).str.strip())
@@ -42,7 +32,7 @@ def compare_headers(txt_file, excel_file):
 
         return diff_df
     except Exception as e:
-        st.error(f"❌ Wystąpił błąd w compare_headers: {e}")
+        st.error(f"❌ Wystąpił błąd: {e}")
         return pd.DataFrame()
 
 # Tworzenie interfejsu w Streamlit
@@ -68,4 +58,4 @@ if txt_file and excel_file:
 
         st.download_button("📥 Pobierz plik wynikowy", result_io, "differences.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
-        st.error(f"❌ Wystąpił błąd w interfejsie Streamlit: {e}")
+        st.error(f"❌ Wystąpił błąd: {e}")
